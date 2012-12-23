@@ -1,0 +1,13 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+before_install:
+  - export PIP_USE_MIRRORS=true
+  - export DJANGO_SETTINGS_MODULE=matrix_field.test_settings
+install:
+  - pip install -e .
+script:
+  - django-admin.py test matrix_field
+env:
+  - DJANGO=1.4.3
