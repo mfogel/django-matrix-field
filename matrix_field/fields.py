@@ -1,6 +1,9 @@
 import json
 
+from django.core.exceptions import ValidationError
 from django.db import models
+
+from .validators import DataTypeValidator, DimensionsValidator
 
 
 class MatrixField(models.Field):
@@ -13,12 +16,20 @@ class MatrixField(models.Field):
 
     MAX_LENGTH = 65535
 
-    def __init__(self, **kwargs):
+    def __init__(self, datatype=None, dimensions=None, **kwargs):
+        self.datatype, self.dimensions = datatype, dimensions
         defaults = {
             'max_length': self.MAX_LENGTH,
+            'default': None,
         }
         defaults.update(kwargs)
         super(MatrixField, self).__init__(**defaults)
+        self.validators.append(DataTypeValidator(self.datatype))
+        self.validators.append(DimensionsValidator(self.dimensions))
+
+    def clean(self, value):
+        print 'asdlkfjalskdjflakjsdflkj'
+        return super(MatrixField, self).clean(value)
 
     def get_internal_type(self):
         # TODO: take advantage of postgres matrix type
@@ -26,7 +37,13 @@ class MatrixField(models.Field):
 
     def to_python(self, value):
         "Convert to python matrix (arrays of arrays)"
-        return json.loads(value)
+        if isinstance(value, (list, tuple)) or value is None:
+            return value
+        print value, type(value)
+        try:
+            return json.loads(value)
+        except:
+            raise ValidationError("Unable to convert value to matrix")
 
     def get_prep_value(self, value):
         "Convert to string"
@@ -39,6 +56,7 @@ try:
 except ImportError:
     pass
 else:
+    # TODO: how to handle dimensions, datatype?
     add_introspection_rules(
         rules=[(
             (MatrixField, ),    # Class(es) these apply to
