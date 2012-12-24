@@ -28,6 +28,7 @@ class DimensionsValidator(object):
         if index == len(self.dimensions):
             if isinstance(value, (list, tuple)):
                 raise ValidationError("Excessive depth of dimensions")
+            return
         if not isinstance(value, (list, tuple)):
             raise ValidationError("Insufficient depth of dimensions")
         if not len(value) == self.dimensions[index]:

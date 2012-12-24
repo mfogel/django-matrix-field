@@ -3,6 +3,7 @@ import json
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from .forms import MatrixField as MatrixFormField
 from .validators import DataTypeValidator, DimensionsValidator
 
 
@@ -27,10 +28,6 @@ class MatrixField(models.Field):
         self.validators.append(DataTypeValidator(self.datatype))
         self.validators.append(DimensionsValidator(self.dimensions))
 
-    def clean(self, value):
-        print 'asdlkfjalskdjflakjsdflkj'
-        return super(MatrixField, self).clean(value)
-
     def get_internal_type(self):
         # TODO: take advantage of postgres matrix type
         return 'CharField'
@@ -39,7 +36,6 @@ class MatrixField(models.Field):
         "Convert to python matrix (arrays of arrays)"
         if isinstance(value, (list, tuple)) or value is None:
             return value
-        print value, type(value)
         try:
             return json.loads(value)
         except:
@@ -48,6 +44,15 @@ class MatrixField(models.Field):
     def get_prep_value(self, value):
         "Convert to string"
         return json.dumps(value)
+
+    def formfield(self, **kwargs):
+        defaults = {
+            'datatype': self.datatype,
+            'dimensions': self.dimensions,
+            'form_class': MatrixFormField,
+        }
+        defaults.update(kwargs)
+        return super(MatrixField, self).formfield(**defaults)
 
 
 # South support
