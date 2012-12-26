@@ -2,6 +2,7 @@ import json
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.fields import NOT_PROVIDED
 
 from .forms import MatrixField as MatrixFormField
 from .validators import DataTypeValidator, DimensionsValidator
@@ -61,15 +62,16 @@ try:
 except ImportError:
     pass
 else:
-    # TODO: how to handle dimensions, datatype?
     add_introspection_rules(
         rules=[(
             (MatrixField, ),    # Class(es) these apply to
             [],                 # Positional arguments (not used)
             {                   # Keyword argument
                 'max_length': [
-                    'max_length', { 'default': MatrixField.MAX_LENGTH }
+                    'max_length', {'default': MatrixField.MAX_LENGTH}
                 ],
+                'datatype': ['datatype', {'default': NOT_PROVIDED}],
+                'dimensions': ['dimensions', {'default': NOT_PROVIDED}],
             },
         )],
         patterns=['matrix_field\.fields\.']
