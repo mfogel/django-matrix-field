@@ -6,7 +6,11 @@ class DataTypeValidator(object):
 
     def __init__(self, datatype):
         super(DataTypeValidator, self).__init__()
-        self.datatype = datatype
+        # str and unicode are mapped to 'database store for strings'
+        self.datatype = (
+            basestring if issubclass(datatype, basestring)
+            else datatype
+        )
 
     def __call__(self, value):
         if isinstance(value, (list, tuple)):

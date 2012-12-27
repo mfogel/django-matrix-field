@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -10,6 +12,11 @@ M1 = ['a', 'b']
 M2 = [[3, 4], [4, 5]]
 M3 = [[[1.3, 1.4, 1.5], [1.2, 1.3, 1.4]], [[2.3, 2.4, 2.5], [3.3, 3.4, 3.5]]]
 M4 = [[[2.0]]]
+
+M1_str = json.dumps(M1)
+M2_str = json.dumps(M2)
+M3_str = json.dumps(M3)
+M4_str = json.dumps(M4)
 
 
 class TestModel(models.Model):
@@ -28,32 +35,36 @@ class MatrixFieldModelFormTestCase(TestCase):
 
     def test_valid(self):
         form = TestModelForm({
-            'str_2': M1,
-            'int_2x2': M2,
-            'float_2x2x3': M3,
-            'float_1x1x1': M4,
+            'str_2': M1_str,
+            'int_2x2': M2_str,
+            'float_2x2x3': M3_str,
+            'float_1x1x1': M4_str,
         })
         self.assertTrue(form.is_valid())
         form.save()
         self.assertEqual(TestModel.objects.count(), 1)
 
-    def test_invalid_type(self):
+    def test_invalid_datatype(self):
         form = TestModelForm({
-            'str_2': [3.0, 4.0],
+            'str_2': json.dumps([3.0, 4.0]),
         })
         self.assertFalse(form.is_valid())
+        self.assertTrue(any('datatype' in e for e in form.errors['str_2']))
 
     def test_invalid_dims1(self):
         form = TestModelForm({
-            'float_1x1x1': [[1]],
+            'float_1x1x1': json.dumps([[1]]),
         })
         self.assertFalse(form.is_valid())
+        self.assertTrue(any(
+            'dimension' in e for e in form.errors['float_1x1x1']))
 
     def test_invalid_dims2(self):
         form = TestModelForm({
-            'str_2': ['a', 'b', 'c'],
+            'str_2': json.dumps(['a', 'b', 'c']),
         })
         self.assertFalse(form.is_valid())
+        self.assertTrue(any('dimension' in e for e in form.errors['str_2']))
 
 
 class MatrixFieldDBTestCase(TestCase):
