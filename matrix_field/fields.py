@@ -16,7 +16,7 @@ class MatrixField(models.Field):
     description = "A matrix"
     __metaclass__ = models.SubfieldBase
 
-    MAX_LENGTH = 65535
+    MAX_LENGTH = 255
 
     def __init__(self, datatype=None, dimensions=None, **kwargs):
         self.datatype, self.dimensions = datatype, dimensions
@@ -31,6 +31,7 @@ class MatrixField(models.Field):
 
     def get_internal_type(self):
         # TODO: take advantage of postgres matrix type
+        #       kinda the whole reason this django app even exists...
         return 'CharField'
 
     def to_python(self, value):
