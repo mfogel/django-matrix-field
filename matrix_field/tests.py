@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.test import TestCase
 
-from . import MatrixField
+from . import MatrixField, MatrixFormField
 
 
 M1 = [[3, 4], [4, 5], [6, 7]]
@@ -26,9 +26,45 @@ class TestModel(models.Model):
                      default=M3a_str)
 
 
+class TestForm(forms.Form):
+    f1 = MatrixFormField(datatype=int, dimensions=(3, 2))
+    f2 = MatrixFormField(datatype=float, dimensions=(1, 1, 1), required=False)
+
+
 class TestModelForm(forms.ModelForm):
     class Meta:
         model = TestModel
+
+
+class MatrixFormFieldTestCase(TestCase):
+
+    def test_valid_specify_all(self):
+        form = TestForm({'f1': M1_str, 'f2': M2_str})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['f1'], M1)
+        self.assertEqual(form.cleaned_data['f2'], M2)
+
+    def test_valid_with_defaults(self):
+        form = TestForm({'f1': M1_str})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['f1'], M1)
+        self.assertEqual(form.cleaned_data['f2'], None)
+
+    def test_invalid_blank(self):
+        form = TestForm({})
+        self.assertFalse(form.is_valid())
+        self.assertTrue(any('required' in e for e in form.errors['f1']))
+
+    def test_invalid_datatype(self):
+        value = [[1.0, 1.0], [1.0, 1.0], [1.0, 1.0]]
+        form = TestForm({'f1': json.dumps(value)})
+        self.assertFalse(form.is_valid())
+        self.assertTrue(any('datatype' in e for e in form.errors['f1']))
+
+    def test_invalid_dimesion(self):
+        form = TestForm({'f1': json.dumps([1])})
+        self.assertFalse(form.is_valid())
+        self.assertTrue(any('dimension' in e for e in form.errors['f1']))
 
 
 class MatrixFieldModelFormTestCase(TestCase):
