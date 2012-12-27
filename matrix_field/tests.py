@@ -8,22 +8,22 @@ from django.test import TestCase
 from . import MatrixField
 
 
-M1 = ['a', 'b']
-M2 = [[3, 4], [4, 5]]
-M3 = [[[1.3, 1.4, 1.5], [1.2, 1.3, 1.4]], [[2.3, 2.4, 2.5], [3.3, 3.4, 3.5]]]
-M4 = [[[2.0]]]
+M1 = [[3, 4], [4, 5], [6, 7]]
+M2 = [[[2.0]]]
+M3a = ['a', 'b']
+M3b = ['c', 'd']
 
 M1_str = json.dumps(M1)
 M2_str = json.dumps(M2)
-M3_str = json.dumps(M3)
-M4_str = json.dumps(M4)
+M3a_str = json.dumps(M3a)
+M3b_str = json.dumps(M3b)
 
 
 class TestModel(models.Model):
-    str_2 = MatrixField(datatype=str, dimensions=(2,))
-    int_2x2 = MatrixField(datatype=int, dimensions=(2, 2), blank=True)
-    float_2x2x3 = MatrixField(datatype=float, dimensions=(2, 2, 3), blank=True)
-    float_1x1x1 = MatrixField(datatype=float, dimensions=(1, 1, 1), blank=True)
+    f1 = MatrixField(datatype=int, dimensions=(3, 2))
+    f2 = MatrixField(datatype=float, dimensions=(1, 1, 1), blank=True)
+    f3 = MatrixField(datatype=str, dimensions=(2,), blank=True,
+                     default=M3a_str)
 
 
 class TestModelForm(forms.ModelForm):
@@ -33,79 +33,88 @@ class TestModelForm(forms.ModelForm):
 
 class MatrixFieldModelFormTestCase(TestCase):
 
-    def test_valid(self):
-        form = TestModelForm({
-            'str_2': M1_str,
-            'int_2x2': M2_str,
-            'float_2x2x3': M3_str,
-            'float_1x1x1': M4_str,
-        })
+    def test_valid_specify_all(self):
+        form = TestModelForm({'f1': M1_str, 'f2': M2_str, 'f3': M3b_str})
         self.assertTrue(form.is_valid())
         form.save()
         self.assertEqual(TestModel.objects.count(), 1)
 
-    def test_invalid_datatype(self):
-        form = TestModelForm({
-            'str_2': json.dumps([3.0, 4.0]),
-        })
+        m = TestModel.objects.get()
+        self.assertEqual(m.f1, M1)
+        self.assertEqual(m.f2, M2)
+        self.assertEqual(m.f3, M3b)
+
+    def test_valid_with_defaults(self):
+        # seems there should be a better way to get a form's default values...?
+        # http://stackoverflow.com/questions/7399490/
+        data = dict(
+            (field_name, field.initial)
+            for field_name, field in TestModelForm().fields.iteritems()
+        )
+        data.update({'f1': M1})
+        form = TestModelForm(data=data)
+        self.assertTrue(form.is_valid())
+        form.save()
+        self.assertEqual(TestModel.objects.count(), 1)
+
+        m = TestModel.objects.get()
+        self.assertEqual(m.f2, None)
+        self.assertEqual(m.f3, M3a)
+
+    def test_invalid_required(self):
+        form = TestModelForm({})
         self.assertFalse(form.is_valid())
-        self.assertTrue(any('datatype' in e for e in form.errors['str_2']))
+        self.assertTrue(any('required' in e for e in form.errors['f1']))
+
+    def test_invalid_datatype(self):
+        value = [[1.0, 1.0], [1.0, 1.0], [1.0, 1.0]]
+        form = TestModelForm({'f1': json.dumps(value)})
+        self.assertFalse(form.is_valid())
+        self.assertTrue(any('datatype' in e for e in form.errors['f1']))
 
     def test_invalid_dims1(self):
-        form = TestModelForm({
-            'float_1x1x1': json.dumps([[1]]),
-        })
+        form = TestModelForm({'f1': M1_str, 'f2': json.dumps([[1]])})
         self.assertFalse(form.is_valid())
-        self.assertTrue(any(
-            'dimension' in e for e in form.errors['float_1x1x1']))
+        self.assertTrue(any('dimension' in e for e in form.errors['f2']))
 
     def test_invalid_dims2(self):
-        form = TestModelForm({
-            'str_2': json.dumps(['a', 'b', 'c']),
-        })
+        value = ['a', 'b', 'c']
+        form = TestModelForm({'f1': M1_str, 'f3': json.dumps(value)})
         self.assertFalse(form.is_valid())
-        self.assertTrue(any('dimension' in e for e in form.errors['str_2']))
+        self.assertTrue(any('dimension' in e for e in form.errors['f3']))
 
 
-class MatrixFieldDBTestCase(TestCase):
+class MatrixFieldTestCase(TestCase):
 
     def test_valid(self):
-        m = TestModel.objects.create(
-            str_2=M1,
-            int_2x2=M2,
-            float_2x2x3=M3,
-            float_1x1x1=M4,
-        )
+        m = TestModel.objects.create(f1=M1, f2=M2, f3=M3b)
         m = TestModel.objects.get(pk=m.pk)
-        self.assertEqual(m.str_2, M1)
-        self.assertEqual(m.int_2x2, M2)
-        self.assertEqual(m.float_2x2x3, M3)
-        self.assertEqual(m.float_1x1x1, M4)
+        self.assertEqual(m.f1, M1)
+        self.assertEqual(m.f2, M2)
+        self.assertEqual(m.f3, M3b)
 
     def test_valid_blank(self):
-        m = TestModel.objects.create(str_2=M1)
+        m = TestModel.objects.create(f1=M1)
         m = TestModel.objects.get(pk=m.pk)
-        self.assertEqual(m.int_2x2, None)
-        self.assertEqual(m.float_2x2x3, None)
+        self.assertEqual(m.f2, None)
+        self.assertEqual(m.f3, M3a)
 
     def test_invalid_type(self):
         with self.assertRaises(ValidationError):
-            TestModel(str_2=[2.0, 3.0]).full_clean()
+            TestModel(f1=M1, f3=[2.0, 3.0]).full_clean()
         with self.assertRaises(ValidationError):
-            TestModel(float_1x1x1=[[[[2]]]]).full_clean()
+            TestModel(f1=M1, f2=[[[2]]]).full_clean()
 
     def test_invalid_dims(self):
-        #with self.assertRaises(ValidationError):
-        #    TestModel(str_2=['a']).full_clean()
         with self.assertRaises(ValidationError):
-            TestModel(str_2=[['a'], ['b']]).full_clean()
-        #with self.assertRaises(ValidationError):
-        #    TestModel(float_1x1x1=[[2.0]]).full_clean()
+            TestModel(f1=M1, f2=['a']).full_clean()
+        with self.assertRaises(ValidationError):
+            TestModel(f1=M1, f3=[['a'], ['b']]).full_clean()
 
     def test_invalid_altogether(self):
         with self.assertRaises(ValidationError):
-            TestModel(str_2={'a': 2}).full_clean()
+            TestModel(f1={'a': 2}).full_clean()
         with self.assertRaises(ValidationError):
-            TestModel(str_2=4).full_clean()
+            TestModel(f1=4).full_clean()
         with self.assertRaises(ValidationError):
-            TestModel(str_2='nil nil').full_clean()
+            TestModel(f1='blah blah').full_clean()
