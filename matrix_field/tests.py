@@ -20,15 +20,16 @@ M3b_str = json.dumps(M3b)
 
 
 class TestModel(models.Model):
-    f1 = MatrixField(datatype=int, dimensions=(3, 2))
-    f2 = MatrixField(datatype=float, dimensions=(1, 1, 1), blank=True)
-    f3 = MatrixField(datatype=str, dimensions=(2,), blank=True,
+    f1 = MatrixField(datatype='int', dimensions=(3, 2))
+    f2 = MatrixField(datatype='float', dimensions=(1, 1, 1), blank=True)
+    f3 = MatrixField(datatype='str', dimensions=(2,), blank=True,
                      default=M3a_str)
 
 
 class TestForm(forms.Form):
-    f1 = MatrixFormField(datatype=int, dimensions=(3, 2))
-    f2 = MatrixFormField(datatype=float, dimensions=(1, 1, 1), required=False)
+    f1 = MatrixFormField(datatype='int', dimensions=(3, 2))
+    f2 = MatrixFormField(datatype='float', dimensions=(1, 1, 1),
+                         required=False)
 
 
 class TestModelForm(forms.ModelForm):
