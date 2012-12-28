@@ -1,6 +1,6 @@
 import json
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.db.models.fields import NOT_PROVIDED
 
@@ -19,6 +19,9 @@ class MatrixField(models.Field):
     MAX_LENGTH = 255
 
     def __init__(self, datatype=None, dimensions=None, **kwargs):
+        if not datatype or not dimensions:
+            raise ImproperlyConfigured("Required kwarg 'datatype' or "
+                                       "'dimensions' missing")
         self.datatype, self.dimensions = datatype, dimensions
         defaults = {
             'max_length': self.MAX_LENGTH,

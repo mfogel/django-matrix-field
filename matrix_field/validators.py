@@ -7,8 +7,10 @@ class DataTypeValidator(object):
     def __init__(self, datatype):
         super(DataTypeValidator, self).__init__()
         # str and unicode are mapped to 'database store for strings'
+        if datatype in ('list', 'tuple'):
+            raise ValidationError("Invalid datatype - not a primitive type")
         self.datatype = (
-            basestring if issubclass(datatype, basestring)
+            'basestring' if datatype in ('str', 'unicode')
             else datatype
         )
 
@@ -17,7 +19,10 @@ class DataTypeValidator(object):
             for elem in value:
                 self(elem)
         else:
-            if not isinstance(value, self.datatype):
+            datatype = type(value).__name__
+            if datatype in ('str', 'unicode'):
+                datatype = 'basestring'
+            if datatype != self.datatype:
                 raise ValidationError("Invalid datatype")
 
 

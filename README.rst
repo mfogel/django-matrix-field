@@ -19,8 +19,8 @@ Database Field
     from matrix_field import MatrixField
 
     class MyModel(models.Model):
-        matrix1 = MatrixField(datatype=float, dimensions=(3, 2))
-        matrix2 = MatrixField(datatype=str, dimensions=(2,))
+        matrix1 = MatrixField(datatype='float', dimensions=(3, 2))
+        matrix2 = MatrixField(datatype='str', dimensions=(2,))
 
     my_inst = MyModel(
         matrix1=[[5.1, -1.2], [4.2, 0.0], [3.14, 2.71]],
@@ -43,7 +43,7 @@ Form Field
     from matrix_field import MatrixFormField
 
     class MyForm(forms.Form):
-        matrix = MatrixFormField(datatype=int, dimensions=(2, 1))
+        matrix = MatrixFormField(datatype='int', dimensions=(2, 1))
 
     my_form = MyForm({
         'matrix': json.dumps([[2], [1]]),  # assignment of json representation
