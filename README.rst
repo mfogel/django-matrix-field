@@ -1,7 +1,7 @@
 django-matrix-field
 ===================
 
-.. image:: https://api.travis-ci.org/mfogel/django-matrix-field.png
+.. image:: https://api.travis-ci.org/mfogel/django-matrix-field.png?branch=develop
    :alt: Build Status
    :target: https://travis-ci.org/mfogel/django-matrix-field
 
